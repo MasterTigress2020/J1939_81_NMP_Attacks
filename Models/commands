@@ -1,0 +1,5 @@
+reset
+go
+build_boolean_model
+check_ltlspec
+quit

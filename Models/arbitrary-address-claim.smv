@@ -1,0 +1,357 @@
+MODULE main
+
+VAR
+
+
+------------------- Environment and State variables --------------------
+power_on_a	:	boolean;	
+bus_off_error_occured_a	:	boolean;	
+delay_completed_a	:	boolean;	
+post_complete_a	:	boolean;	
+timer_expired_without_a_contending_claim_a	:	boolean;	
+contending_claim_a	:	boolean;	
+commanded_address_message_received_a	:	boolean;	
+message_with_own_SA_a	:	boolean;	
+bus_off_error_a	:	boolean;	
+power_on_b	:	boolean;	
+bus_off_error_occured_b	:	boolean;	
+delay_completed_b	:	boolean;	
+post_complete_b	:	boolean;	
+timer_expired_without_a_contending_claim_b	:	boolean;	
+contending_claim_b	:	boolean;	
+commanded_address_message_received_b	:	boolean;	
+message_with_own_SA_b	:	boolean;	
+contending_address_claim_b	:	boolean;	
+bus_off_error_b	:	boolean;	
+attacker_inject_message_chanAB	:	boolean	;
+attacker_inject_message_chanBA	:	boolean	;
+
+----------------- Sequence numbers -------------------
+available_address_a	:	0.. 5	;
+address_a	:	0.. 5	;
+available_address_b	:	0.. 5	;
+address_b	:	0.. 5	;
+
+---------------- state for EntityA state machine ----------------
+
+entitya_state	:
+{
+	off,
+	start,
+	waiting_for_address_claim,
+	delaying_before_address_reclaim,
+	prioritizing_address_contention_during_initialization,
+	sending_receiving_normal_traffic,
+	prioritizing_address_contention_after_successful_claim,
+	cannot_claim_address,
+	delaying_before_sending_cannot_claim,
+	selecting_address_different_from_contender
+};
+
+---------------- state for EntityB state machine ----------------
+
+entityb_state	:
+{
+	off,
+	start,
+	waiting_for_address_claim,
+	delaying_before_address_reclaim,
+	prioritizing_address_contention_during_initialization,
+	sending_receiving_normal_traffic,
+	prioritizing_address_contention_after_successful_claim,
+	cannot_claim_address,
+	delaying_before_sending_cannot_claim,
+	selecting_address_different_from_contender
+};
+------------ Possible EntityA actions ----------------
+
+entitya_action	:
+{
+	null_action,
+	send_address_claim_a,
+	send_re_claim_address_a,
+	send_cannot_address_claim_a
+};
+------------ Possible EntityB actions ----------------
+
+entityb_action	:
+{
+	null_action,
+	send_address_claim_b,
+	send_re_claim_address_b,
+	send_cannot_address_claim_b
+};
+
+--------------- Adversarial channel from ENTITYA to ENTITYB ---------------
+
+chan_AB	:
+{
+	chanAB_null_action,
+	chanAB_send_address_claim_a,
+	chanAB_send_re_claim_address_a,
+	chanAB_send_cannot_address_claim_a
+};
+
+--------------- Adversarial channel from ENTITYB to ENTITYA ---------------
+
+chan_BA	:
+{
+	chanBA_null_action,
+	chanBA_send_address_claim_b,
+	chanBA_send_re_claim_address_b,
+	chanBA_send_cannot_address_claim_b
+};
+
+--------------- Injective adversary action for channel chan_AB ---------------
+
+inj_adv_act_AB	:
+{
+	adv_AB_null_action,
+	adv_AB_send_address_claim_a,
+	adv_AB_send_re_claim_address_a,
+	adv_AB_send_cannot_address_claim_a
+};
+
+--------------- Injective adversary action for channel chan_BA ---------------
+
+inj_adv_act_BA	:
+{
+	adv_BA_null_action,
+	adv_BA_send_address_claim_b,
+	adv_BA_send_re_claim_address_b,
+	adv_BA_send_cannot_address_claim_b
+};
+
+
+DEFINE
+
+-----------------EntityA transitions --------------------
+EntityA_T1	:=	 (entitya_state = off & power_on_a)	;
+EntityA_T2	:=	 (entitya_state = start & post_complete_a)	;
+EntityA_T3	:=	 (entitya_state = waiting_for_address_claim & bus_off_error_occured_a)	;
+EntityA_T4	:=	 (entitya_state = delaying_before_address_reclaim & delay_completed_a )	;
+EntityA_T5	:=	 (entitya_state = waiting_for_address_claim & timer_expired_without_a_contending_claim_a)	;
+EntityA_T6	:=	 (entitya_state = waiting_for_address_claim & chan_BA=chanBA_send_address_claim_b | chan_BA=chanBA_send_re_claim_address_b)	;
+EntityA_T7	:=	 (entitya_state = prioritizing_address_contention_during_initialization & name_b>name_a)	;
+EntityA_T8	:=	 (entitya_state = prioritizing_address_contention_during_initialization & name_b<=name_a)	;
+EntityA_T9	:=	 (entitya_state = selecting_address_different_from_contender & available_address_a<5)	;
+EntityA_T10	:=	 (entitya_state = selecting_address_different_from_contender & available_address_a=5)	;
+EntityA_T11	:=	 (entitya_state = cannot_claim_address & commanded_address_message_received_a)	;
+EntityA_T12	:=	 (entitya_state = cannot_claim_address & chan_BA=chanBA_send_address_claim_b | chan_BA=chanBA_send_re_claim_address_b)	;
+EntityA_T13	:=	 (entitya_state = delaying_before_sending_cannot_claim & delay_completed_a)	;
+EntityA_T14	:=	 (entitya_state = prioritizing_address_contention_after_successful_claim & name_b<=name_a)	;
+EntityA_T15	:=	 (entitya_state = prioritizing_address_contention_after_successful_claim & name_b>name_a)	;
+EntityA_T16	:=	 (entitya_state = sending_receiving_normal_traffic & chan_BA=chanBA_send_address_claim_b | chan_BA=chanBA_send_re_claim_address_b)	;
+EntityA_T17	:=	 (entitya_state = sending_receiving_normal_traffic & chan_BA=chanBA_send_address_claim_b | message_with_own_SA_a)	;
+
+-----------------EntityB transitions --------------------
+EntityB_T1	:=	 (entityb_state = off & power_on_b)	;
+EntityB_T2	:=	 (entityb_state = start & post_complete_b)	;
+EntityB_T3	:=	 (entityb_state = waiting_for_address_claim & bus_off_error_occured_b)	;
+EntityB_T4	:=	 (entityb_state = delaying_before_address_reclaim & delay_completed_b )	;
+EntityB_T5	:=	 (entityb_state = waiting_for_address_claim & timer_expired_without_a_contending_claim_b)	;
+EntityB_T6	:=	 (entityb_state = waiting_for_address_claim & contending_address_claim_b)	;
+EntityB_T7	:=	 (entityb_state = prioritizing_address_contention_during_initialization & name_a>name_b)	;
+EntityB_T8	:=	 (entityb_state = prioritizing_address_contention_during_initialization & name_a<=name_b)	;
+EntityB_T9	:=	 (entityb_state = selecting_address_different_from_contender & available_address_b<5)	;
+EntityB_T10	:=	 (entityb_state = selecting_address_different_from_contender & available_address_b=5)	;
+EntityB_T11	:=	 (entityb_state = cannot_claim_address & commanded_address_message_received_b)	;
+EntityB_T12	:=	 (entityb_state = cannot_claim_address & chan_AB=chanAB_send_address_claim_a | chan_AB=chanAB_send_re_claim_address_a)	;
+EntityB_T13	:=	 (entityb_state = delaying_before_sending_cannot_claim & delay_completed_a)	;
+EntityB_T14	:=	 (entityb_state = prioritizing_address_contention_after_successful_claim & name_a<=name_b)	;
+EntityB_T15	:=	 (entityb_state = prioritizing_address_contention_after_successful_claim & name_a>name_b)	;
+EntityB_T16	:=	 (entityb_state = sending_receiving_normal_traffic & chan_AB=chanAB_send_address_claim_a | chan_AB=chanAB_send_re_claim_address_a)	;
+EntityB_T17	:=	 (entityb_state = sending_receiving_normal_traffic & chan_AB=chanAB_send_address_claim_a | message_with_own_SA_b)	;
+
+------------------- Adversary enabled or not --------------------
+inj_adv_AB_enabled:=	TRUE;
+inj_adv_BA_enabled:=	TRUE;
+name_b := 0;
+name_a := 1;
+
+
+ASSIGN
+
+
+------------------- Adversarial state machines --------------------
+
+init(inj_adv_act_AB)	:=
+{
+	adv_AB_null_action,
+	adv_AB_send_address_claim_a,
+	adv_AB_send_re_claim_address_a,
+	adv_AB_send_cannot_address_claim_a
+};
+
+next(inj_adv_act_AB)	:=	case
+TRUE	:	{
+	adv_AB_null_action,
+	adv_AB_send_address_claim_a,
+	adv_AB_send_re_claim_address_a,
+	adv_AB_send_cannot_address_claim_a
+};
+esac	;
+
+init(inj_adv_act_BA)	:=
+{
+	adv_BA_null_action,
+	adv_BA_send_address_claim_b,
+	adv_BA_send_re_claim_address_b,
+	adv_BA_send_cannot_address_claim_b
+};
+
+next(inj_adv_act_BA)	:=	case
+TRUE	:	{
+	adv_BA_null_action,
+	adv_BA_send_address_claim_b,
+	adv_BA_send_re_claim_address_b,
+	adv_BA_send_cannot_address_claim_b
+};
+esac	;
+
+
+---------------EntityA state machine ------------------
+
+init(entitya_state)	:=off;
+
+next(entitya_state)	:=	 case
+
+(EntityA_T1 )	:	start	;
+(EntityA_T2 | EntityA_T4 | EntityA_T7 | EntityA_T9 | EntityA_T11 )	:	waiting_for_address_claim	;
+(EntityA_T3 )	:	delaying_before_address_reclaim	;
+(EntityA_T6 )	:	prioritizing_address_contention_during_initialization	;
+(EntityA_T5 | EntityA_T15 | EntityA_T17 )	:	sending_receiving_normal_traffic	;
+(EntityA_T16 )	:	prioritizing_address_contention_after_successful_claim	;
+(EntityA_T10 | EntityA_T13 )	:	cannot_claim_address	;
+(EntityA_T12 )	:	delaying_before_sending_cannot_claim	;
+(EntityA_T8 | EntityA_T14 )	:	selecting_address_different_from_contender	;
+TRUE	:	entitya_state	;
+esac	;
+
+---------------EntityB state machine ------------------
+
+init(entityb_state)	:=off;
+
+next(entityb_state)	:=	 case
+
+(EntityB_T1 )	:	start	;
+(EntityB_T2 | EntityB_T4 | EntityB_T7 | EntityB_T9 | EntityB_T11 )	:	waiting_for_address_claim	;
+(EntityB_T3 )	:	delaying_before_address_reclaim	;
+(EntityB_T6 )	:	prioritizing_address_contention_during_initialization	;
+(EntityB_T5 | EntityB_T15 | EntityB_T17 )	:	sending_receiving_normal_traffic	;
+(EntityB_T16 )	:	prioritizing_address_contention_after_successful_claim	;
+(EntityB_T10 | EntityB_T13 )	:	cannot_claim_address	;
+(EntityB_T12 )	:	delaying_before_sending_cannot_claim	;
+(EntityB_T8 | EntityB_T14 )	:	selecting_address_different_from_contender	;
+TRUE	:	entityb_state	;
+esac	;
+
+
+init(entitya_action)	:= null_action	;
+
+next(entitya_action)	:=	 case
+
+(EntityA_T1 | EntityA_T3 | EntityA_T6 | EntityA_T11 | EntityA_T12 | EntityA_T14 | EntityA_T16 )	:	null_action	;
+(EntityA_T2 | EntityA_T4 | EntityA_T9 )	:	send_address_claim_a	;
+(EntityA_T7 | EntityA_T15 | EntityA_T17 )	:	send_re_claim_address_a	;
+(EntityA_T10 | EntityA_T13 )	:	send_cannot_address_claim_a	;
+TRUE	:	 null_action	;
+esac	;
+
+
+init(entityb_action)	:= null_action	;
+
+next(entityb_action)	:=	 case
+
+(EntityB_T1 | EntityB_T3 | EntityB_T6 | EntityB_T11 | EntityB_T12 | EntityB_T14 | EntityB_T16 )	:	null_action	;
+(EntityB_T2 | EntityB_T4 | EntityB_T9 )	:	send_address_claim_b	;
+(EntityB_T7 | EntityB_T15 | EntityB_T17 )	:	send_re_claim_address_b	;
+(EntityB_T10 | EntityB_T13 )	:	send_cannot_address_claim_b	;
+TRUE	:	 null_action	;
+esac	;
+
+init(chan_AB)	:=	chanAB_null_action;
+
+next(chan_AB)	:=	 case
+attacker_inject_message_chanAB	&	inj_adv_AB_enabled	&	inj_adv_act_AB	=	adv_AB_null_action	:	chanAB_null_action	;
+attacker_inject_message_chanAB	&	inj_adv_AB_enabled	&	inj_adv_act_AB	=	adv_AB_send_address_claim_a	:	chanAB_send_address_claim_a	;
+attacker_inject_message_chanAB	&	inj_adv_AB_enabled	&	inj_adv_act_AB	=	adv_AB_send_re_claim_address_a	:	chanAB_send_re_claim_address_a	;
+attacker_inject_message_chanAB	&	inj_adv_AB_enabled	&	inj_adv_act_AB	=	adv_AB_send_cannot_address_claim_a	:	chanAB_send_cannot_address_claim_a	;
+entitya_action	=	 null_action	:	chanAB_null_action	;
+entitya_action	=	 send_address_claim_a	:	chanAB_send_address_claim_a	;
+entitya_action	=	 send_re_claim_address_a	:	chanAB_send_re_claim_address_a	;
+entitya_action	=	 send_cannot_address_claim_a	:	chanAB_send_cannot_address_claim_a	;
+TRUE	: {chanAB_null_action}	;
+esac	;
+
+
+init(chan_BA)	:=	chanBA_null_action;
+
+next(chan_BA)	:=	 case
+attacker_inject_message_chanBA	&	inj_adv_BA_enabled	&	inj_adv_act_BA	=	adv_BA_null_action	:	chanBA_null_action	;
+attacker_inject_message_chanBA	&	inj_adv_BA_enabled	&	inj_adv_act_BA	=	adv_BA_send_address_claim_b	:	chanBA_send_address_claim_b	;
+attacker_inject_message_chanBA	&	inj_adv_BA_enabled	&	inj_adv_act_BA	=	adv_BA_send_re_claim_address_b	:	chanBA_send_re_claim_address_b	;
+attacker_inject_message_chanBA	&	inj_adv_BA_enabled	&	inj_adv_act_BA	=	adv_BA_send_cannot_address_claim_b	:	chanBA_send_cannot_address_claim_b	;
+entityb_action	=	 null_action	:	chanBA_null_action	;
+entityb_action	=	 send_address_claim_b	:	chanBA_send_address_claim_b	;
+entityb_action	=	 send_re_claim_address_b	:	chanBA_send_re_claim_address_b	;
+entityb_action	=	 send_cannot_address_claim_b	:	chanBA_send_cannot_address_claim_b	;
+TRUE	: {chanBA_null_action}	;
+esac	;
+
+
+--------------- State Variables state machine ------------------
+
+
+
+init(bus_off_error_a)	:= FALSE	;
+
+next(bus_off_error_a)	:=	 case
+(EntityA_T3 )	:	TRUE	;
+(EntityA_T1 | EntityA_T4 )	:	FALSE	;
+TRUE	:	bus_off_error_a	;
+esac	;
+
+
+
+init(bus_off_error_b)	:= FALSE	;
+
+next(bus_off_error_b)	:=	 case
+(EntityB_T3 )	:	TRUE	;
+(EntityB_T1 | EntityB_T4 )	:	FALSE	;
+TRUE	:	bus_off_error_b	;
+esac	;
+
+
+init(available_address_a)	:= 0	;
+init(address_a)	:= 0	;
+init(available_address_b)	:= 0	;
+init(address_b)	:= 0	;
+
+TRANS
+case
+(EntityA_T1 )	:	next(available_address_a)	=	0	;
+TRUE	:	next(available_address_a)	=	available_address_a	;
+esac	;
+
+TRANS
+case
+(EntityA_T1 )	:	next(address_a)	=	0	;
+TRUE	:	next(address_a)	=	address_a	;
+esac	;
+
+TRANS
+case
+(EntityB_T1 )	:	next(available_address_b)	=	0	;
+(EntityB_T8 )	:	next(available_address_b)	=	(available_address_b+1)	;
+TRUE	:	next(available_address_b)	=	available_address_b	;
+esac	;
+
+TRANS
+case
+(EntityB_T1 )	:	next(address_b)	=	0	;
+TRUE	:	next(address_b)	=	address_b	;
+esac	;
+
+LTLSPEC 
+	F (entityb_state = sending_receiving_normal_traffic);
